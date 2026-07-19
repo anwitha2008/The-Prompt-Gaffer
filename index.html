@@ -10,6 +10,8 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+  <!-- Accessibility Skip Navigation Link -->
+  <a href="#main-content" class="skip-link sr-only">Skip to Main Content</a>
 
   <div class="app-container">
     
@@ -54,7 +56,7 @@
     </header>
 
     <!-- Main Workspace Container -->
-    <main class="content-wrapper">
+    <main class="content-wrapper" id="main-content" tabindex="-1">
       
       <!-- ================= STAFF PORTAL PANELS ================= -->
       <div id="staff-portal" class="staff-layout">
