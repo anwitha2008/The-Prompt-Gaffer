@@ -13,6 +13,15 @@ function escapeHTML(str) {
     .replace(/'/g, "&#039;");
 }
 
+// Debounce Utility for Performance Optimization
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
 
 // ==========================================================================
 // STATE MANAGEMENT
@@ -292,8 +301,13 @@ function initStaffPortal() {
   const canvas = document.getElementById("heatmap-canvas");
   canvas.addEventListener("click", handleHeatmapClick);
   
-  // Render initial heatmap
+  // Render initial heatmap and setup debounced resize redraw
   renderHeatmap();
+  window.addEventListener("resize", debounce(() => {
+    if (state.activePortal === 'staff') {
+      renderHeatmap();
+    }
+  }, 150));
   
   // Incidents initialization
   renderIncidents();
@@ -761,6 +775,8 @@ function switchFanTab(tabName) {
     renderEcoItemCard();
   } else if (tabName === 'snap') {
     renderLeaderboard();
+  } else if (tabName === 'transit') {
+    renderTransitBoard();
   } else if (tabName === 'buddy') {
     const input = document.getElementById("fan-chat-input");
     if (input) setTimeout(() => input.focus(), 50);
@@ -1121,11 +1137,16 @@ function translateFanUI(lang) {
     }
   }
   
-  // Re-run dynamic renders
-  updateWayfindingRoute();
-  renderTransitBoard();
-  renderEcoItemCard();
-  renderLeaderboard();
+  // Re-run dynamic renders based on active tab to avoid unnecessary rendering overhead
+  if (state.activeFanTab === 'wayfinder') {
+    updateWayfindingRoute();
+  } else if (state.activeFanTab === 'transit') {
+    renderTransitBoard();
+  } else if (state.activeFanTab === 'eco') {
+    renderEcoItemCard();
+  } else if (state.activeFanTab === 'snap') {
+    renderLeaderboard();
+  }
   
   // Update instructions label if user hasn't selected gate/section
   const resultsDiv = document.getElementById("wayfinder-instructions");
