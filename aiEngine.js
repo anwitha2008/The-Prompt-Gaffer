@@ -184,7 +184,29 @@ function streamTypewriter(text, onToken) {
  * Calls real Google Gemini API and streams the output to onToken callback.
  */
 export function streamAIResponse(query, context, portalMode, language, onToken) {
-  // Client-Side Input Sanitization / Prompt Injection Interceptor
+  // 1. Empty State Input Validation
+  if (!query || query.trim() === "") {
+    let msg = "Please enter a valid query or command.";
+    if (language === 'es') msg = "Por favor, introduce una consulta válida.";
+    if (language === 'fr') msg = "Veuillez saisir une requête valide.";
+    if (language === 'ar') msg = "يرجى إدخال استعلام أو أمر صالح.";
+    if (language === 'ja') msg = "有効なクエリを入力してください。";
+    onToken(msg, true);
+    return { abort: () => {} };
+  }
+
+  // 2. Offline Mode Detection
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    const fallbackText = findLocalFallbackResponse(query, context, portalMode, language);
+    const typewriterControl = streamTypewriter(`[Offline Mode] ${fallbackText}`, onToken);
+    return {
+      abort: () => {
+        if (typewriterControl) typewriterControl.abort();
+      }
+    };
+  }
+
+  // 3. Client-Side Input Sanitization / Prompt Injection Interceptor
   const lowerQuery = query.toLowerCase();
   let blockRequest = false;
   let blockMessage = "";
@@ -224,8 +246,12 @@ export function streamAIResponse(query, context, portalMode, language, onToken) 
   let typewriterControl = null;
   let isAborted = false;
 
-  // Perform API call
-  fetch(apiURL, {
+  // 4. Timeout configuration (5 seconds)
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("Timeout: Gemini API connection timed out.")), 5000);
+  });
+
+  const fetchPromise = fetch(apiURL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -244,6 +270,10 @@ export function streamAIResponse(query, context, portalMode, language, onToken) 
     })
   })
   .then(res => {
+    // Detect invalid API credentials (401/403)
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("Authentication failure: Invalid or unauthorized Gemini API credentials.");
+    }
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     return res.json();
   })
@@ -255,19 +285,29 @@ export function streamAIResponse(query, context, portalMode, language, onToken) 
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
       textResult = data.candidates[0].content.parts[0].text;
     } else {
-      throw new Error("Invalid response format");
+      throw new Error("Invalid response format received from Google servers.");
     }
     
     // Stream output word by word
     typewriterControl = streamTypewriter(textResult, onToken);
-  })
+  });
+
+  // Race connection to handle network timeouts
+  Promise.race([fetchPromise, timeoutPromise])
   .catch(err => {
     if (isAborted) return;
-    console.warn("Gemini API call failed, falling back to local simulation:", err);
+    console.warn("AI Engine Request Issue, falling back to local simulation:", err);
+    
+    let errorPrefix = "[API Issue]";
+    if (err.message.includes("Authentication")) {
+      errorPrefix = "[Auth Failure]";
+    } else if (err.message.includes("Timeout")) {
+      errorPrefix = "[Request Timeout]";
+    }
     
     // Fail-safe offline local fallback
     const fallbackText = findLocalFallbackResponse(query, context, portalMode, language);
-    typewriterControl = streamTypewriter(`[Gemini API Offline] ${fallbackText}`, onToken);
+    typewriterControl = streamTypewriter(`${errorPrefix} ${fallbackText}`, onToken);
   });
 
   return {
