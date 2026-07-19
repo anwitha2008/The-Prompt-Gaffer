@@ -231,7 +231,9 @@ header {
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
 }
 
 .glass-card.highlight-green {
@@ -1181,8 +1183,14 @@ header {
 }
 
 @keyframes flasher {
-  from { border-color: var(--accent-red); }
-  to { border-color: rgba(255, 59, 48, 0.2); }
+  from { 
+    border-color: var(--accent-red); 
+    box-shadow: 0 0 12px rgba(255, 59, 48, 0.4);
+  }
+  to { 
+    border-color: rgba(255, 59, 48, 0.25); 
+    box-shadow: 0 0 4px rgba(255, 59, 48, 0.05);
+  }
 }
 
 .bin-meta {
