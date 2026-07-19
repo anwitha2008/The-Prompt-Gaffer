@@ -249,6 +249,11 @@ header {
   display: grid;
   grid-template-columns: 7fr 5fr;
   gap: 24px;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#waste-portal, #safety-portal, #fan-portal {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .staff-left-col, .staff-right-col {
@@ -1310,4 +1315,12 @@ header {
     flex: 1;
     justify-content: center;
   }
+}
+
+/* Accessibility Focus Outlines */
+button:focus-visible, 
+input:focus-visible, 
+select:focus-visible {
+  outline: 2px solid var(--accent-blue) !important;
+  outline-offset: 2px !important;
 }

@@ -761,6 +761,9 @@ function switchFanTab(tabName) {
     renderEcoItemCard();
   } else if (tabName === 'snap') {
     renderLeaderboard();
+  } else if (tabName === 'buddy') {
+    const input = document.getElementById("fan-chat-input");
+    if (input) setTimeout(() => input.focus(), 50);
   }
 }
 
