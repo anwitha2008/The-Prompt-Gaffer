@@ -184,6 +184,39 @@ function streamTypewriter(text, onToken) {
  * Calls real Google Gemini API and streams the output to onToken callback.
  */
 export function streamAIResponse(query, context, portalMode, language, onToken) {
+  // Client-Side Input Sanitization / Prompt Injection Interceptor
+  const lowerQuery = query.toLowerCase();
+  let blockRequest = false;
+  let blockMessage = "";
+  
+  if (lowerQuery.includes("ignore all previous instructions") || 
+      lowerQuery.includes("ignore guidelines") || 
+      lowerQuery.includes("ignore instructions") || 
+      lowerQuery.includes("you are now dan") || 
+      lowerQuery.includes("do anything now") || 
+      lowerQuery.includes("system instructions verbatim") ||
+      lowerQuery.includes("system prompt verbatim")) {
+    blockRequest = true;
+    blockMessage = "🛡️ SECURITY AUDIT WARNING: [BLOCKED] Input string matches prompt injection jailbreak signature. Request cancelled to protect model context integrity.";
+  }
+  
+  if (blockRequest) {
+    let words = blockMessage.split(" ");
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < words.length) {
+        onToken(words.slice(0, i + 1).join(" "), false);
+        i++;
+      } else {
+        clearInterval(interval);
+        onToken(blockMessage, true);
+      }
+    }, 60);
+    return {
+      abort: () => clearInterval(interval)
+    };
+  }
+
   const prompt = buildPrompt(query, context, portalMode, language);
   const apiURL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
   

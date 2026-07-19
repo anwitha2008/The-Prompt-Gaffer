@@ -2,6 +2,17 @@
 import { streamAIResponse } from './aiEngine.js';
 import { LOCALIZATION } from './localization.js';
 
+// XSS Prevention Utility
+function escapeHTML(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 
 // ==========================================================================
 // STATE MANAGEMENT
@@ -538,7 +549,7 @@ function triggerStaffAIResponse(query) {
   // Append user message
   const userMsg = document.createElement("div");
   userMsg.className = "message user";
-  userMsg.innerHTML = `${query}<span class="message-meta">Director • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+  userMsg.innerHTML = `${escapeHTML(query)}<span class="message-meta">Director • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
   chatMessages.appendChild(userMsg);
   
   // Create AI typing node
@@ -553,12 +564,12 @@ function triggerStaffAIResponse(query) {
   // Trigger stream
   cancelCurrentStaffAI = streamAIResponse(query, state, 'staff', 'en', (streamedText, isComplete) => {
     if (!isComplete) {
-      aiMsg.innerHTML = `${streamedText}<span class="message-meta">Operations Agent • Streaming...</span>`;
+      aiMsg.innerHTML = `${escapeHTML(streamedText)}<span class="message-meta">Operations Agent • Streaming...</span>`;
     } else {
       aiMsg.classList.remove("streaming");
       
       // Post-process response to inject action triggers
-      let responseHTML = streamedText;
+      let responseHTML = escapeHTML(streamedText);
       
       // Inject dispatcher actions if keywords present
       if (query.toLowerCase().includes("spill") || query.toLowerCase().includes("custodial")) {
@@ -791,7 +802,7 @@ function triggerFanAIResponse(query) {
   // Append user message
   const userMsg = document.createElement("div");
   userMsg.className = "message user";
-  userMsg.innerHTML = `${query}<span class="message-meta">Fan • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+  userMsg.innerHTML = `${escapeHTML(query)}<span class="message-meta">Fan • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
   chatMessages.appendChild(userMsg);
   
   // Scroll down
@@ -806,10 +817,10 @@ function triggerFanAIResponse(query) {
   // Trigger stream
   cancelCurrentFanAI = streamAIResponse(query, state, 'fan', state.fanLanguage, (streamedText, isComplete) => {
     if (!isComplete) {
-      aiMsg.innerHTML = `${streamedText}<span class="message-meta">AI Assistant • Streaming...</span>`;
+      aiMsg.innerHTML = `${escapeHTML(streamedText)}<span class="message-meta">AI Assistant • Streaming...</span>`;
     } else {
       aiMsg.classList.remove("streaming");
-      aiMsg.innerHTML = `${streamedText}<span class="message-meta">AI Assistant • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+      aiMsg.innerHTML = `${escapeHTML(streamedText)}<span class="message-meta">AI Assistant • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
       
       // Scroll down
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -1261,7 +1272,7 @@ function triggerWasteAIResponse(query) {
   const chatMessages = document.getElementById("waste-chat-messages");
   const userMsg = document.createElement("div");
   userMsg.className = "message user";
-  userMsg.innerHTML = `${query}<span class="message-meta">Director • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+  userMsg.innerHTML = `${escapeHTML(query)}<span class="message-meta">Director • ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
   chatMessages.appendChild(userMsg);
   
   const aiMsg = document.createElement("div");
@@ -1273,11 +1284,11 @@ function triggerWasteAIResponse(query) {
   
   cancelCurrentWasteAI = streamAIResponse(query, state, 'waste', 'en', (streamedText, isComplete) => {
     if (!isComplete) {
-      aiMsg.innerHTML = `${streamedText}<span class="message-meta">Logistics Copilot • Streaming...</span>`;
+      aiMsg.innerHTML = `${escapeHTML(streamedText)}<span class="message-meta">Logistics Copilot • Streaming...</span>`;
     } else {
       aiMsg.classList.remove("streaming");
       
-      let responseHTML = streamedText;
+      let responseHTML = escapeHTML(streamedText);
       if (query.toLowerCase().includes("dispatch") || query.toLowerCase().includes("audit") || query.toLowerCase().includes("empty") || query.toLowerCase().includes("route")) {
         responseHTML += `
           <button class="ai-action-btn" onclick="dispatchAllSweepers()">
