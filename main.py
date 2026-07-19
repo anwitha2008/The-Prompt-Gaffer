@@ -60,8 +60,8 @@ class ResponseBuilder:
     @staticmethod
     def build_action_plan(query: str, language: str, portal_mode: str) -> str:
         if portal_mode == "waste":
-            return "Custodial team dispatched to Gate A Smart Bins."
-        return f"Simulated execution plan resolving route to Section 112 in {language}."
+            return f"Custodial team dispatched to Gate A Smart Bins. Request context: {query}"
+        return f"Simulated plan resolving route to Section 112 in {language} for query: {query}"
 
 @app.post("/api/chat")
 async def chat_endpoint(request: PromptRequest):
