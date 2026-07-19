@@ -9,11 +9,39 @@ class PromptRequest(BaseModel):
     language: str = "en"
     portal_mode: str = "fan"
 
+class SecurityGuardrailEvaluator:
+    """
+    Evaluates input prompts against a list of known jailbreak/prompt injection patterns.
+    """
+    JAILBREAK_PATTERNS = [
+        "ignore all previous instructions",
+        "ignore guidelines",
+        "ignore instructions",
+        "you are now dan",
+        "do anything now",
+        "system instructions verbatim",
+        "system prompt verbatim"
+    ]
+
+    @classmethod
+    def is_injection_attempt(cls, query: str) -> bool:
+        normalized_query = query.lower()
+        return any(pattern in normalized_query for pattern in cls.JAILBREAK_PATTERNS)
+
+class ResponseBuilder:
+    """
+    Assembles localized plans based on user request parameters.
+    """
+    @staticmethod
+    def build_action_plan(query: str, language: str, portal_mode: str) -> str:
+        if portal_mode == "waste":
+            return "Custodial team dispatched to Gate A Smart Bins."
+        return f"Simulated execution plan resolving route to Section 112 in {language}."
+
 @app.post("/api/chat")
 async def chat_endpoint(request: PromptRequest):
     """
-    Main processing endpoint for AI chat assistant queries.
-    Scans for safety guardrails and outputs a structured action plan.
+    Main API endpoint coordinating safety validations and planning steps.
     """
     if not request.query or request.query.strip() == "":
         raise HTTPException(status_code=400, detail="Query cannot be empty")
@@ -22,20 +50,21 @@ async def chat_endpoint(request: PromptRequest):
     if not api_key:
         raise HTTPException(status_code=401, detail="Unauthorized: Gemini API Key missing")
 
-    # Heuristic Security Guardrails
-    query_lower = request.query.lower()
-    if "ignore all previous instructions" in query_lower or "dan" in query_lower:
+    # Guardrail Interceptor Check
+    if SecurityGuardrailEvaluator.is_injection_attempt(request.query):
         return {
             "action_plan": "🛡️ SECURITY AUDIT WARNING: [BLOCKED] Input string matches prompt injection jailbreak signature.",
             "language": request.language,
             "status": "blocked"
         }
 
-    # Standard responses
-    action_plan = f"Simulated execution plan resolving route to Section 112 in {request.language}."
-    if request.portal_mode == "waste":
-        action_plan = "Custodial team dispatched to Gate A Smart Bins."
-        
+    # Build response plan
+    action_plan = ResponseBuilder.build_action_plan(
+        query=request.query,
+        language=request.language,
+        portal_mode=request.portal_mode
+    )
+
     return {
         "action_plan": action_plan,
         "language": request.language,
